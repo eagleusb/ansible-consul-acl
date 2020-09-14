@@ -1,0 +1,7 @@
+parseable: True
+quiet: False
+use_default_rules: True
+verbosity: 2
+skip_list: []
+tags: []
+exclude_paths: []

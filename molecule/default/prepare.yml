@@ -1,0 +1,6 @@
+---
+- name: "molecule | prepare"
+  hosts: all
+  tasks:
+    - debug:
+        msg: "hello world"

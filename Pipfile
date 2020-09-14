@@ -1,0 +1,25 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+molecule = {extras = ["lint"], version = ">=3.0.8"}
+docker = ">=4.3.1"
+
+[packages]
+ansible = ">=2.9"
+yamllint = ">=1.24.2"
+ansible-lint = ">=4.3.4"
+python-consul2 = ">=0.1.4"
+requests = "*"
+pyhcl = ">=0.4.4"
+
+[requires]
+python_version = "3"
+
+[scripts]
+yamllint = "yamllint --strict --format colored ."
+ansiblelint = "ansible-lint ."
+test = "molecule test --destroy always --parallel"
+consul = "consul agent -dev -config-file ./molecule/default/consul/server.json"

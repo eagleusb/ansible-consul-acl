@@ -1,0 +1,33 @@
+{
+  "datacenter": "dc1",
+  "log_level": "INFO",
+  "node_name": "foobar",
+  "server": true,
+  "addresses": {
+    "https": "127.0.0.1"
+  },
+  "ports": {
+    "http": 8500,
+    "https": 8501
+  },
+  "verify_incoming": false,
+  "verify_outgoing": false,
+  "verify_server_hostname": false,
+  "ca_file": "",
+  "cert_file": "",
+  "key_file": "",
+  "auto_encrypt": {
+    "allow_tls": false
+  },
+  "acl": {
+    "enabled": true,
+    "default_policy": "deny",
+    "down_policy": "extend-cache",
+    "enable_token_persistence": true,
+    "enable_key_list_policy": false,
+    "tokens": {
+      "master": "79175b33-12da-4810-985f-04c8becbc87f",
+      "agent": "79175b33-12da-4810-985f-04c8becbc87f"
+    }
+  }
+}

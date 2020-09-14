@@ -1,0 +1,56 @@
+---
+dependency:
+  name: "galaxy"
+  enabled: false
+  options:
+    ignore-certs: false
+    ignore-errors: false
+    role-file: "requirements.yml"
+    requirements-file: "collections.yml"
+
+driver:
+  name: "${MOL_DRIVER:-docker}"
+
+# see: https://github.com/ansible-community/molecule/blob/master/molecule/model/schema_v3.py#L232
+platforms:
+  - name: "ansible-2.9"
+    image: "${MOL_IMAGE:-docker.pkg.github.com/eagleusb/docker-ansible/ansible:latest}"
+    pre_build_image: true
+    privileged: false
+    groups: ["all"]
+
+lint: |
+  set -e
+  yamllint --strict --format colored .
+  ansible-lint .
+
+provisioner:
+  name: "ansible"
+  log: true
+  playbooks:
+    create: create.yml
+    prepare: prepare.yml
+    converge: converge.yml
+    destroy: destroy.yml
+
+verifier:
+  name: ansible
+  connection_options: {}
+  # ansible_ssh_user: foo
+  # ansible_ssh_common_args: -o IdentitiesOnly=no
+  ansible_args: []
+  # - --inventory=mygroups.yml
+  # - --limit=host1,host2
+  config_options:
+    defaults:
+      interpreter_python: auto
+      forks: 50
+      fact_caching: jsonfile
+      gathering: smart
+      no_target_syslog: true
+      callback_whitelist: timer
+      stdout_callback: yaml
+  inventory:
+    group_vars:
+      all:
+        foo: "bar"

@@ -1,0 +1,49 @@
+---
+# yaml-files:
+#   - '*.yaml'
+#   - '*.yml'
+#   - '.yamllint'
+
+locale: en_US.UTF-8
+
+# dont lint these files
+ignore: |
+  .github/workflows
+  # all/this/directory/
+  # *.template.yaml
+
+# include default rules
+extends: default
+
+# default rules list
+# braces: enable
+# brackets: enable
+# colons: enable
+# commas: enable
+# comments:
+#   level: warning
+# comments-indentation:
+#   level: warning
+# document-end: disable
+# document-start:
+#   level: warning
+# empty-lines: enable
+# empty-values: disable
+# hyphens: enable
+# indentation: enable
+# key-duplicates: enable
+# key-ordering: disable
+# line-length: enable
+# new-line-at-end-of-file: enable
+# new-lines: enable
+# octal-values: disable
+# quoted-strings: disable
+# trailing-spaces: enable
+# truthy:
+#   level: warning
+
+# see: https://yamllint.readthedocs.io/en/stable/rules.html
+rules:
+  line-length:
+    max: 120
+    level: warning
