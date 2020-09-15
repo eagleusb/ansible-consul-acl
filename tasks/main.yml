@@ -9,7 +9,7 @@
 - name: "consul-acl | add or update token and its associated acls"
   consul_acl:
     host: "{{ consul_server.addr | mandatory() }}"
-    scheme: "{{ consul_server.scheme}}"
+    scheme: "{{ consul_server.scheme }}"
     port: "{{ consul_server.port | default(8500) }}"
     mgmt_token: "{{ consul_master_token | mandatory() }}"
     name: "{{ item.client }}"
@@ -23,7 +23,7 @@
 - name: "consul-acl | delete known token"
   consul_acl:
     host: "{{ consul_server.addr | mandatory() }}"
-    scheme: "{{ consul_server.scheme}}"
+    scheme: "{{ consul_server.scheme }}"
     port: "{{ consul_server.port | default(8500) }}"
     mgmt_token: "{{ consul_master_token | mandatory() }}"
     token: "{{ item }}"

@@ -1,6 +1,6 @@
 ---
 galaxy_info:
-  role_name: consul-acl
+  role_name: "consul_acl"
   author: eagleusb
   description: "Ansible role to manage Consul token and acl"
   license: "license (GPLv3)"
