@@ -4,6 +4,7 @@
 cache/
 *.key
 *.vault
+.galaxy_install_info
 test.yml
 
 # Byte-compiled / optimized / DLL files

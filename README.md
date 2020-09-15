@@ -1,4 +1,4 @@
-# ansible-skeleton
+# ansible-consul-acl
 
 Manage Consul ACL and Tokens declaratively with Ansible.
 
