@@ -20,18 +20,53 @@ ansible-galaxy install eagleusb.consul_acl
 
 ## Variables
 
-| Name         | Required | Default Value | Description                                          |
-|--------------|----------|---------------|------------------------------------------------------|
-| skeleton_foo | no       | *5.0*         | flush input data to foobar every seconds.nanoseconds |
+| Name                | Required | Default Value | Description                                      |
+|---------------------|----------|---------------|--------------------------------------------------|
+| consul_master_token | yes      | nil           | privileged master token to access consul api     |
+| consul_server       | yes      | -             | consul server addr, port, scheme                 |
+| consul_client_token | no       | []            | tokens(s) to add or update with associated rules |
+| consul_remove_token | no       | []            | token(s) to remove from consul                   |
+
+
 
 ## Playbook Example
 
 ```yml
-- hosts: all
+- name: "consul-acl"
+  hosts: all
   roles:
-    - role: ansible-skeleton
+    - role: "ansible-consul-acl"
       vars:
-        skeleton_foo: "1.0"
+        consul_server:
+          addr: "127.0.0.1"
+          port: 8500
+          scheme: "http"
+        consul_master_token: "123-456-789"
+        consul_client_token:
+          - client: "foobar-todelete"
+            token: "123-456-789"
+            rules: []
+          - client: "foobar-shuttle"
+            token: "123-456-789"
+            rules:
+              - event: "fiesta"
+                policy: write
+              - key: "foo/bar"
+                policy: read
+              - key: "foo/private"
+                policy: deny
+              - keyring: write
+              - node: "my-node"
+                policy: write
+              - operator: read
+              - query: ""
+                policy: write
+              - service: "consul"
+                policy: write
+              - session: "standup"
+                policy: write
+        consul_remove_token:
+          - "123-456-789"
 ```
 
 ## License
