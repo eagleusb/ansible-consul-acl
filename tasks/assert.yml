@@ -1,0 +1,19 @@
+---
+
+- name: "consul-acl | ensure consul_client_token list is valid and not null"
+  assert:
+    msg: "you must define tokens and acl rules with consul_client_token : {{ consul_client_token }}"
+    that:
+      - consul_client_token is sequence()
+      - consul_client_token | length() > 0
+  tags: always
+
+- name: "consul-acl | ensure consul_remove_token list is valid it defined"
+  assert:
+    msg: "you must define valid tokens to remove : {{ consul_remove_token }}"
+    that:
+      - consul_remove_token is sequence()
+      - '{% if (consul_remove_token | length() > 0) %}
+          consul_remove_token[0] is string
+        {% endif %}'
+  tags: always

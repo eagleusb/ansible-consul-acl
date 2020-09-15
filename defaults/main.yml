@@ -17,5 +17,3 @@ consul_client_token: []
 # type: list
 # descr:
 consul_remove_token: []
-  # - token: ""
-  # - token: ""

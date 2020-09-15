@@ -1,7 +1,36 @@
 ---
 - name: "molecule | converge"
   hosts: all
-  tasks:
-    - name: "include ansible-skeleton"
-      include_role:
-        name: "ansible-skeleton"
+  roles:
+    - "ansible-consul-acl"
+  vars:
+    consul_server:
+      addr: "127.0.0.1"
+      port: 8500
+      scheme: "http"
+    consul_master_token: "79175b33-12da-4810-985f-04c8becbc87f"
+    consul_client_token:
+      - client: "foobar-todelete"
+        token: "b2a7fdd8-0912-4d23-827e-b46fd82d6d62"
+        rules: []
+      - client: "foobar-shuttle"
+        token: "a2a7fdd8-0912-4d23-827e-b46fd82d6d61"
+        rules:
+          - event: "fiesta"
+            policy: write
+          - key: "foo/bar"
+            policy: read
+          - key: "foo/private"
+            policy: deny
+          - keyring: write
+          - node: "my-node"
+            policy: write
+          - operator: read
+          - query: ""
+            policy: write
+          - service: "consul"
+            policy: write
+          - session: "standup"
+            policy: write
+    consul_remove_token:
+      - "b2a7fdd8-0912-4d23-827e-b46fd82d6d62"
