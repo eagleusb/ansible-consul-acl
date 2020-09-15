@@ -1,0 +1,21 @@
+---
+# type: string
+# descr:
+consul_master_token: ""
+
+# type: dict
+# descr:
+consul_server:
+  addr: ""
+  port: 8500
+  scheme: "http"
+
+# type: list of dict
+# descr:
+consul_client_token: []
+
+# type: list
+# descr:
+consul_remove_token: []
+  # - token: ""
+  # - token: ""

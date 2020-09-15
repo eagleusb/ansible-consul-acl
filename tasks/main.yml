@@ -1,0 +1,34 @@
+---
+
+- name: "consul-acl | import assertions"
+  import_tasks: "assert.yml"
+  tags:
+    - "consul-acl-assert"
+    - "always"
+
+- name: "consul-acl | add or update token and its associated acls"
+  consul_acl:
+    host: "{{ consul_server.addr | mandatory() }}"
+    scheme: "{{ consul_server.scheme}}"
+    port: "{{ consul_server.port | default(8500) }}"
+    mgmt_token: "{{ consul_master_token | mandatory() }}"
+    name: "{{ item.client }}"
+    token: "{{ item.token }}"
+    rules: "{{ item.rules | list() }}"
+  loop: "{{ consul_client_token }}"
+  when:
+    - consul_client_token is sequence()
+    - consul_client_token | length() > 0
+
+- name: "consul-acl | delete known token"
+  consul_acl:
+    host: "{{ consul_server.addr | mandatory() }}"
+    scheme: "{{ consul_server.scheme}}"
+    port: "{{ consul_server.port | default(8500) }}"
+    mgmt_token: "{{ consul_master_token | mandatory() }}"
+    token: "{{ item }}"
+    state: absent
+  loop: "{{ consul_remove_token }}"
+  when:
+    - consul_remove_token is sequence()
+    - consul_remove_token | length() > 0

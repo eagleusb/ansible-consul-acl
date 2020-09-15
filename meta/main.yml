@@ -1,0 +1,22 @@
+---
+galaxy_info:
+  role_name: consul-acl
+  author: eagleusb
+  description: "Ansible role to manage Consul token and acl"
+  license: "license (GPLv3)"
+  min_ansible_version: 2.9
+  platforms:
+    - name: EL
+      versions:
+        - 7
+    - name: Ubuntu
+      versions:
+        - all
+    - name: Debian
+      versions:
+        - all
+  galaxy_tags:
+    - ansible
+    - role
+
+dependencies: []
