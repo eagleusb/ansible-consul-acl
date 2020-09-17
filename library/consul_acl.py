@@ -246,27 +246,42 @@ def set_acl(consul_client, configuration):
     :param configuration: the run configuration
     :return: the output of setting the ACL
     """
-    acls_as_json = decode_acls_as_json(consul_client.acl.list())
-    existing_acls_mapped_by_name = dict(
-        (acl.name, acl) for acl in acls_as_json if acl.name is not None)
-    existing_acls_mapped_by_token = dict(
-        (acl.token, acl) for acl in acls_as_json)
-    if None in existing_acls_mapped_by_token:
-        raise AssertionError("expecting ACL list to be associated to a token: %s" %
-                             existing_acls_mapped_by_token[None])
+    # acls_as_json = decode_acls_as_json(consul_client.acl.list())
+    # existing_acls_mapped_by_name = dict(
+    #     (acl.name, acl) for acl in acls_as_json if acl.name is not None)
+    # existing_acls_mapped_by_token = dict(
+    #     (acl.token, acl) for acl in acls_as_json)
+    # if None in existing_acls_mapped_by_token:
+    #     raise AssertionError("expecting ACL list to be associated to a token: %s" %
+    #                          existing_acls_mapped_by_token[None])
 
-    if configuration.token is None and configuration.name and configuration.name in existing_acls_mapped_by_name:
-        # No token but name given so can get token from name
-        configuration.token = existing_acls_mapped_by_name[configuration.name].token
+    # if configuration.token is None and configuration.name and configuration.name in existing_acls_mapped_by_name:
+    #     # No token but name given so can get token from name
+    #     configuration.token = existing_acls_mapped_by_name[configuration.name].token
 
-    if configuration.token and configuration.token in existing_acls_mapped_by_token:
-        return update_acl(consul_client, configuration)
+    # if configuration.token and configuration.token in existing_acls_mapped_by_token:
+    #     return update_acl(consul_client, configuration)
+    # else:
+    #     if configuration.token in existing_acls_mapped_by_token:
+    #         raise AssertionError()
+    #     if configuration.name in existing_acls_mapped_by_name:
+    #         raise AssertionError()
+    #     return create_acl(consul_client, configuration)
+    if configuration.token and policy_exists(consul_client, configuration):
+        # return update_acl(consul_client, configuration)
+        return Output(changed=False, token=configuration.token, rules=configuration.rules, operation=UPDATE_OPERATION)
     else:
-        if configuration.token in existing_acls_mapped_by_token:
-            raise AssertionError()
-        if configuration.name in existing_acls_mapped_by_name:
-            raise AssertionError()
         return create_acl(consul_client, configuration)
+
+
+def policy_exists(consul_client, configuration):
+    """
+    """
+    policy_exists = [
+        True if policy["Name"] == configuration.name else False
+        for policy in consul_client.acl.policy.list()
+    ]
+    return True in policy_exists
 
 
 def update_acl(consul_client, configuration):
@@ -282,11 +297,18 @@ def update_acl(consul_client, configuration):
     if changed:
         name = configuration.name if configuration.name is not None else existing_acl.name
         rules_as_hcl = encode_rules_as_hcl_string(configuration.rules)
-        updated_token = consul_client.acl.update(
-            configuration.token,
+        # updated_token = consul_client.acl.update(
+        #     configuration.token,
+        #     name=name,
+        #     type=configuration.token_type,
+        #     rules=rules_as_hcl
+        # )
+        # update associated policy
+        updated_token = consul_client.acl.policy.update(
+            policy_id=name,
             name=name,
-            type=configuration.token_type,
-            rules=rules_as_hcl
+            rules=rules_as_hcl,
+            token=configuration.token,
         )
         if updated_token != configuration.token:
             raise AssertionError()
@@ -304,6 +326,7 @@ def create_acl(consul_client, configuration):
     rules_as_hcl = encode_rules_as_hcl_string(
         configuration.rules) if len(configuration.rules) > 0 else None
     # create policy
+    # see https://www.consul.io/api-docs/acl/tokens#create-a-token
     consul_client.acl.policy.create(
         name=configuration.name,
         description=configuration.name,
@@ -311,6 +334,7 @@ def create_acl(consul_client, configuration):
         # datacenters=["dc1"],
     )
     # create token
+    # see https://www.consul.io/api-docs/acl/tokens#create-a-token
     payload = {
         "SecretID": configuration.token,
         "Description": configuration.name,
@@ -347,10 +371,19 @@ def load_acl_with_token(consul, token):
     :return: the ACL associated to the given token
     :exception ConsulACLTokenNotFoundException: raised if the given token does not exist
     """
-    acl_as_json = consul.acl.info(token)
-    if acl_as_json is None:
-        raise ConsulACLNotFoundException(token)
-    return decode_acl_as_json(acl_as_json)
+    # acl_as_json = consul.acl.info(token)
+    # token_policies = consul.acl.tokens.get(accessor_id=token)
+
+    # search for policy id
+    # policy_id = consul.acl.policy.list()
+
+    # token_policies = consul.acl.tokens.list(policy)
+    # policy = consul.acl.policy.get(
+    #     policy_id=token_policies.Policies[0])
+    # acl_as_json = policy["Rules"]
+    # if acl_as_json is None:
+    #     raise ConsulACLNotFoundException(token)
+    # return decode_acl_as_json(acl_as_json)
 
 
 def encode_rules_as_hcl_string(rules):
@@ -683,8 +716,9 @@ def main():
 
     try:
         if configuration.state == PRESENT_STATE_VALUE:
-            # output = set_acl(consul_client, configuration)
-            output = create_acl(consul_client, configuration)
+            output = set_acl(consul_client, configuration)
+            # output = create_acl(consul_client, configuration)
+            # output = update_acl(consul_client, configuration)
         else:
             output = remove_acl(consul_client, configuration)
     except ConnectionError as e:
