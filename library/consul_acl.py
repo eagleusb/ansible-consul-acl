@@ -229,14 +229,13 @@ _ARGUMENT_SPEC = {
     HOST_PARAMETER_NAME: dict(default='localhost'),
     SCHEME_PARAMETER_NAME: dict(required=False, default='http'),
     VALIDATE_CERTS_PARAMETER_NAME: dict(required=False, type='bool', default=True),
-    NAME_PARAMETER_NAME: dict(required=False),
+    NAME_PARAMETER_NAME: dict(required=True),
     PORT_PARAMETER_NAME: dict(default=8500, type='int'),
     RULES_PARAMETER_NAME: dict(default=None, required=False, type='list'),
     STATE_PARAMETER_NAME: dict(default=PRESENT_STATE_VALUE, choices=[PRESENT_STATE_VALUE, ABSENT_STATE_VALUE]),
     TOKEN_PARAMETER_NAME: dict(required=False),
     TOKEN_TYPE_PARAMETER_NAME: dict(required=False, choices=[CLIENT_TOKEN_TYPE_VALUE, MANAGEMENT_TOKEN_TYPE_VALUE],
                                     default=CLIENT_TOKEN_TYPE_VALUE),
-    "policy": dict(required=False, type='str')
 }
 
 
@@ -305,11 +304,11 @@ def create_acl(consul_client, configuration):
     rules_as_hcl = encode_rules_as_hcl_string(
         configuration.rules) if len(configuration.rules) > 0 else None
     # create policy
-    consul_client.acl.Policy().create(
+    consul_client.acl.policy.create(
         name=configuration.name,
-        description="foobar",
+        description=configuration.name,
         rules=rules_as_hcl,
-        datacenters="dc1"
+        # datacenters=["dc1"],
     )
     # create token
     payload = {
@@ -321,7 +320,7 @@ def create_acl(consul_client, configuration):
             }
         ]
     }
-    token = consul_client.acl.Tokens().create(payload)
+    token = consul_client.acl.tokens.create(payload)
     rules = configuration.rules
     return Output(changed=True, token=token, rules=rules, operation=CREATE_OPERATION)
 
@@ -630,8 +629,13 @@ def get_consul_client(configuration):
         token = configuration.token
     if token is None:
         raise AssertionError("Expecting the management token to always be set")
-    return consul.Consul(host=configuration.host, port=configuration.port, scheme=configuration.scheme,
-                         verify=configuration.validate_certs, token=token)
+    return consul.Consul(
+        host=configuration.host,
+        port=configuration.port,
+        scheme=configuration.scheme,
+        verify=configuration.validate_certs,
+        token=token,
+    )
 
 
 def check_dependencies():
@@ -674,7 +678,6 @@ def main():
         state=module.params.get(STATE_PARAMETER_NAME),
         token=module.params.get(TOKEN_PARAMETER_NAME),
         token_type=module.params.get(TOKEN_TYPE_PARAMETER_NAME),
-        # policy=module.params.get("policy")
     )
     consul_client = get_consul_client(configuration)
 
