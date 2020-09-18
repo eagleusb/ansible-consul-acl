@@ -228,7 +228,9 @@ class Consul(object):
             supports_check_mode=False,
             required_together=[],
         )
+        self._consul_client()
 
+    @classmethod
     def _consul_client(self):
         token_admin = self.module.params[PARAM_TOKEN_ADMIN]
         if not token_admin:
@@ -244,11 +246,41 @@ class Consul(object):
             dc=None,
         )
 
+    def _policy_exists(self):
+      policy_exists = [
+          True if policy["Name"] == self.module.params[PARAM_NAME] else False
+          for policy in self.consul.acl.policy.list()
+      ]
+      return True in policy_exists
+
+    def _policy_create(self, parameter_list):
+      pass
+
+    def _policy_update(self, parameter_list):
+      pass
+
+    def _policy_delete(self, parameter_list):
+      pass
+
+    def _token_exists(self, parameter_list):
+      pass
+
+    def _token_create(self, parameter_list):
+      pass
+
+    def _token_update(self, parameter_list):
+      pass
+
+    def _token_delete(self, parameter_list):
+      pass
+
+    def _hcl_from_json(self, parameter_list):
+      pass
+
     def run(self):
-        # dir(self.module.params)
-        # print(self.module.params)
-        self._consul_client()
-        self.module.exit_json(**self.result)
+      # policy
+      # token
+      self.module.exit_json(**self.result)
 
 
 if __name__ == "__main__":
