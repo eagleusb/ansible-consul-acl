@@ -255,9 +255,7 @@ class Consul(object):
 
     def _policy_create(self):
         if self._policy_exists():
-            self.result["changed"] = False
-            # TODO: update policy
-            return
+            self._policy_update()
         else:
             rules = self._json_from_yaml(self.module.params[PARAM_RULES])
             description = "Policy associated to {}".format(
@@ -268,16 +266,34 @@ class Consul(object):
                 rules=rules,
                 datacenters=self.module.params[PARAM_DATACENTER],
             )
+            self.result["message"] = "Policy created successfully."
             self.result["changed"] = True
 
-    def _policy_update(self, parameter_list):
-        pass
+    def _policy_update(self):
+        policies = self.consul.acl.policy.list()
+        for policy in policies:
+            if policy["Name"] == self.module.params[PARAM_NAME]:
+                current_policy = self.consul.acl.policy.get(
+                    policy_id=policy["ID"])
+                rules = self._json_from_yaml(self.module.params[PARAM_RULES])
+                if current_policy["Rules"] != rules:
+                    self.consul.acl.policy.update(
+                        policy_id=policy["ID"],
+                        name=policy["Name"],
+                        description=policy["Description"],
+                        rules=rules,
+                        datacenters=self.module.params[PARAM_DATACENTER],
+                    )
+                    self.result["message"] = "Policy rules updated successfully."
+                    self.result["changed"] = True
+                break
 
     def _policy_delete(self):
         policies = self.consul.acl.policy.list()
         for policy in policies:
             if policy["Name"] == self.module.params[PARAM_NAME]:
                 self.consul.acl.policy.delete(policy_id=policy["ID"])
+                self.result["message"] = "Policy deleted successfully."
                 self.result["changed"] = True
                 break
 
@@ -306,18 +322,22 @@ class Consul(object):
             # "ExpirationTTL": "",
         }
         if self._token_exists(payload):
-            self.result["changed"] = False
-            self.result["message"] = "Token already exists."
-            # TODO: update token
-            return
+            self._token_update(payload)
         else:
             self.consul.acl.tokens.create(payload)
             self.result["tokenid"] = payload["AccessorID"]
-            self.result["message"] = "Token with associated Policy creation successful."
+            self.result["message"] = "Token with associated Policy created successfully."
             self.result["changed"] = True
 
-    def _token_update(self, parameter_list):
-        pass
+    def _token_update(self, payload):
+        current_token = self.consul.acl.tokens.get(
+            accessor_id=payload["AccessorID"])
+        if not "Policies" in current_token.keys():
+            self.consul.acl.tokens.update(
+                accessor_id=payload["AccessorID"], payload=payload)
+            self.result["tokenid"] = payload["AccessorID"]
+            self.result["message"] = "Token association to Policy updated successfully."
+            self.result["changed"] = True
 
     def _token_delete(self):
         accessor_id = str(uuid.uuid5(
@@ -343,14 +363,14 @@ class Consul(object):
 
     def run(self):
         if self.module.params[PARAM_STATE] == ["present"]:
-            # policy
+            # create associated policy
             self._policy_create()
-            # token
+            # create token with policy binding
             self._token_create()
         elif self.module.params[PARAM_STATE] == ["absent"]:
-            # policy
+            # remove policy
             self._policy_delete()
-            # token
+            # remove token
             self._token_delete()
         self.module.exit_json(**self.result)
 
