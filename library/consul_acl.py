@@ -194,8 +194,8 @@ VALID_RULES_POLICY = [
 ]
 
 _ARGUMENT_SPEC = {
-    PARAM_DATACENTER: dict(default=["dc1"], type="list"),
-    PARAM_HOSTNAME: dict(default='localhost', type="str"),
+    PARAM_DATACENTER: dict(default=None, type="list"),
+    PARAM_HOSTNAME: dict(default="localhost", type="str"),
     PARAM_NAME: dict(required=True, type="str"),
     PARAM_PORT: dict(default=8500, type="int"),
     PARAM_RULES: dict(default=None, required=False, type="dict"),
@@ -224,14 +224,14 @@ class Consul(object):
         token_admin = self.module.params[PARAM_TOKEN_ADMIN]
         if not token_admin:
             raise AssertionError(
-                "Expecting the management token to always be set")
+                "Expecting the admin token to always be set")
 
         self.consul = consul.Consul(
             host=self.module.params[PARAM_HOSTNAME],
             port=self.module.params[PARAM_PORT],
             scheme=self.module.params[PARAM_SCHEME],
             verify=self.module.params[PARAM_VALIDATE_CERTS],
-            token=self.module.params[PARAM_TOKEN_ADMIN],
+            token=token_admin,
             dc=None,
         )
 
