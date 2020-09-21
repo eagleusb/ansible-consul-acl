@@ -4,6 +4,11 @@
 # Copyright: (c) 2020, Leslie-Alexandre DENIS <git@eagleusb.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
+from os import access
+
+from consul.base import NotFound
+
+
 ANSIBLE_METADATA = {'metadata_version': '1.1',
                     'status': ['preview'],
                     'supported_by': 'community'}
@@ -162,6 +167,7 @@ try:
     import consul
     import hcl
     import json
+    import uuid
     from requests.exceptions import ConnectionError
     from ansible.module_utils.basic import AnsibleModule
 except ImportError:
@@ -215,7 +221,6 @@ class Consul(object):
     def __init__(self):
         self.result = {
             "changed": False,
-            "original_message": "",
             "message": "",
         }
         self.module = AnsibleModule(
@@ -259,7 +264,6 @@ class Consul(object):
                 rules=rules,
                 datacenters=self.module.params[PARAM_DATACENTER],
             )
-            self.result["rules"] = rules
             self.result["changed"] = True
 
 
@@ -269,11 +273,18 @@ class Consul(object):
     def _policy_delete(self, parameter_list):
         pass
 
-    def _token_exists(self, parameter_list):
-        pass
+    def _token_exists(self, payload):
+        predefined_accessor_id = payload["AccessorID"]
+        token_exists = [
+            True if token["AccessorID"] == predefined_accessor_id else False
+            for token in self.consul.acl.tokens.list()
+        ]
+        return True in token_exists
 
-    def _token_create(self, parameter_list):
+    def _token_create(self):
         payload = {
+            "AccessorID": str(uuid.uuid5(
+                uuid.NAMESPACE_DNS, name=self.module.params[PARAM_NAME])),
             "SecretID": self.module.params[PARAM_TOKEN],
             "Description": self.module.params[PARAM_NAME],
             "Policies": [
@@ -282,7 +293,15 @@ class Consul(object):
                 }
             ]
         }
-        self.consul.acl.tokens.create(payload)
+        if self._token_exists(payload):
+            self.result["changed"] = False
+            self.result["message"] = "Token already exists."
+            return
+        else:
+            self.consul.acl.tokens.create(payload)
+            self.result["token"] = payload["AccessorID"]
+            self.result["message"] = "Token with associated Policy creation successful."
+            self.result["changed"] = True
 
     def _token_update(self, parameter_list):
         pass
@@ -308,6 +327,7 @@ class Consul(object):
         # policy
         self._policy_create()
         # token
+        self._token_create()
         self.module.exit_json(**self.result)
 
 
