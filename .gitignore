@@ -1,5 +1,8 @@
 !**/.gitkeep
 
+# vscode
+.vscode
+
 # Ansible
 cache/
 *.key

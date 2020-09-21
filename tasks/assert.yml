@@ -8,12 +8,12 @@
       - consul_client_token | length() > 0
   tags: always
 
-- name: "consul-acl | ensure consul_remove_token list is valid it defined"
+- name: "consul-acl | ensure consul_remove_token list is valid when defined"
   assert:
     msg: "you must define valid tokens to remove : {{ consul_remove_token }}"
     that:
       - consul_remove_token is sequence()
       - '{% if (consul_remove_token | length() > 0) %}
-          consul_remove_token[0] is string
+        consul_remove_token[0]["client"] is string
         {% endif %}'
   tags: always
