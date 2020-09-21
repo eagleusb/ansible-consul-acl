@@ -4,11 +4,6 @@
 # Copyright: (c) 2020, Leslie-Alexandre DENIS <git@eagleusb.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from os import access
-
-from consul.base import NotFound
-
-
 ANSIBLE_METADATA = {'metadata_version': '1.1',
                     'status': ['preview'],
                     'supported_by': 'community'}
@@ -182,23 +177,31 @@ PARAM_SCHEME = "scheme"
 PARAM_STATE = "state"
 PARAM_TOKEN = "token"
 PARAM_TOKEN_ADMIN = "mgmt_token"
-PARAM_TOKEN_TYPE = "token_type"
 PARAM_VALIDATE_CERTS = "validate_certs"
 
-CREATE_OPERATION = "create"
-REMOVE_OPERATION = "remove"
-UPDATE_OPERATION = "update"
-
-VALID_RULES_SCOPES = [
+VALID_RULES_RESOURCE = [
     "agent",
+    "agent_prefix",
     "event",
+    "event_prefix",
+    "key_prefix",
     "key",
     "keyring",
     "node",
+    "node_prefix",
     "operator",
     "query",
+    "query_prefix",
     "service",
-    "session"
+    "service_prefix",
+    "session",
+    "session_prefix",
+]
+VALID_RULES_POLICY = [
+    "read",
+    "write",
+    "deny",
+    "list",
 ]
 
 _ARGUMENT_SPEC = {
@@ -210,9 +213,7 @@ _ARGUMENT_SPEC = {
     PARAM_SCHEME: dict(required=False, default="http"),
     PARAM_STATE: dict(default="present", choices=["present", "absent"], type="list"),
     PARAM_TOKEN_ADMIN: dict(required=True, no_log=True, type="str"),
-    PARAM_TOKEN: dict(required=False, type="str"),
-    PARAM_TOKEN_TYPE: dict(required=False, choices=["client", "management"],
-                           default="client", type="list"),
+    PARAM_TOKEN: dict(required=False, no_log=True, type="str"),
     PARAM_VALIDATE_CERTS: dict(required=False, default=True, type="bool"),
 }
 
@@ -255,23 +256,30 @@ class Consul(object):
     def _policy_create(self):
         if self._policy_exists():
             self.result["changed"] = False
+            # TODO: update policy
             return
         else:
             rules = self._json_from_yaml(self.module.params[PARAM_RULES])
+            description = "Policy associated to {}".format(
+                self.module.params[PARAM_NAME])
             self.consul.acl.policy.create(
                 name=self.module.params[PARAM_NAME],
-                description=self.module.params[PARAM_NAME],
+                description=description,
                 rules=rules,
                 datacenters=self.module.params[PARAM_DATACENTER],
             )
             self.result["changed"] = True
 
-
     def _policy_update(self, parameter_list):
         pass
 
-    def _policy_delete(self, parameter_list):
-        pass
+    def _policy_delete(self):
+        policies = self.consul.acl.policy.list()
+        for policy in policies:
+            if policy["Name"] == self.module.params[PARAM_NAME]:
+                self.consul.acl.policy.delete(policy_id=policy["ID"])
+                self.result["changed"] = True
+                break
 
     def _token_exists(self, payload):
         predefined_accessor_id = payload["AccessorID"]
@@ -286,35 +294,45 @@ class Consul(object):
             "AccessorID": str(uuid.uuid5(
                 uuid.NAMESPACE_DNS, name=self.module.params[PARAM_NAME])),
             "SecretID": self.module.params[PARAM_TOKEN],
-            "Description": self.module.params[PARAM_NAME],
+            "Description": "Token for {}".format(self.module.params[PARAM_NAME]),
             "Policies": [
                 {
                     "Name": self.module.params[PARAM_NAME]
                 }
-            ]
+            ],
+            "Local": False,
+            # TODO: support temporary token
+            # "ExpirationTime": "",
+            # "ExpirationTTL": "",
         }
         if self._token_exists(payload):
             self.result["changed"] = False
             self.result["message"] = "Token already exists."
+            # TODO: update token
             return
         else:
             self.consul.acl.tokens.create(payload)
-            self.result["token"] = payload["AccessorID"]
+            self.result["tokenid"] = payload["AccessorID"]
             self.result["message"] = "Token with associated Policy creation successful."
             self.result["changed"] = True
 
     def _token_update(self, parameter_list):
         pass
 
-    def _token_delete(self, parameter_list):
-        pass
+    def _token_delete(self):
+        accessor_id = str(uuid.uuid5(
+            uuid.NAMESPACE_DNS, name=self.module.params[PARAM_NAME]))
+        self.consul.acl.tokens.delete(accessor_id=accessor_id)
+        self.result["message"] = "Token {} deleted successfully.".format(
+            accessor_id)
+        self.result["changed"] = True
 
     def _hcl_from_json(self, rules):
         try:
             rules_from_json = hcl.loads(rules)
             return rules_from_json
         except TypeError as identifier:
-              pass
+            pass
 
     def _json_from_yaml(self, rules):
         try:
@@ -324,10 +342,16 @@ class Consul(object):
             pass
 
     def run(self):
-        # policy
-        self._policy_create()
-        # token
-        self._token_create()
+        if self.module.params[PARAM_STATE] == ["present"]:
+            # policy
+            self._policy_create()
+            # token
+            self._token_create()
+        elif self.module.params[PARAM_STATE] == ["absent"]:
+            # policy
+            self._policy_delete()
+            # token
+            self._token_delete()
         self.module.exit_json(**self.result)
 
 
