@@ -161,23 +161,13 @@ operation:
 try:
     import consul
     import hcl
+    import json
     from requests.exceptions import ConnectionError
     from ansible.module_utils.basic import AnsibleModule
 except ImportError:
     raise ImportError("You must install python-consul2, pyhcl and requests")
 
-RULE_SCOPES = [
-    "agent",
-    "event",
-    "key",
-    "keyring",
-    "node",
-    "operator",
-    "query",
-    "service",
-    "session"
-]
-
+PARAM_DATACENTER = "datacenter"
 PARAM_HOSTNAME = "host"
 PARAM_NAME = "name"
 PARAM_PORT = "port"
@@ -193,22 +183,27 @@ CREATE_OPERATION = "create"
 REMOVE_OPERATION = "remove"
 UPDATE_OPERATION = "update"
 
-_NAME_JSON_PROPERTY = "Name"
-_POLICY_HCL_PROPERTY = "policy"
-_POLICY_JSON_PROPERTY = "policy"
-_POLICY_YML_PROPERTY = "policy"
-_RULES_JSON_PROPERTY = "Rules"
-_TOKEN_JSON_PROPERTY = "ID"
-_TOKEN_TYPE_JSON_PROPERTY = "Type"
+VALID_RULES_SCOPES = [
+    "agent",
+    "event",
+    "key",
+    "keyring",
+    "node",
+    "operator",
+    "query",
+    "service",
+    "session"
+]
 
 _ARGUMENT_SPEC = {
+    PARAM_DATACENTER: dict(default=["dc1"], type="list"),
     PARAM_HOSTNAME: dict(default='localhost', type="str"),
-    PARAM_TOKEN_ADMIN: dict(required=True, no_log=True, type="str"),
     PARAM_NAME: dict(required=True, type="str"),
     PARAM_PORT: dict(default=8500, type="int"),
-    PARAM_RULES: dict(default=None, required=False, type="list"),
+    PARAM_RULES: dict(default=None, required=False, type="dict"),
     PARAM_SCHEME: dict(required=False, default="http"),
     PARAM_STATE: dict(default="present", choices=["present", "absent"], type="list"),
+    PARAM_TOKEN_ADMIN: dict(required=True, no_log=True, type="str"),
     PARAM_TOKEN: dict(required=False, type="str"),
     PARAM_TOKEN_TYPE: dict(required=False, choices=["client", "management"],
                            default="client", type="list"),
@@ -230,7 +225,6 @@ class Consul(object):
         )
         self._consul_client()
 
-    @classmethod
     def _consul_client(self):
         token_admin = self.module.params[PARAM_TOKEN_ADMIN]
         if not token_admin:
@@ -247,40 +241,74 @@ class Consul(object):
         )
 
     def _policy_exists(self):
-      policy_exists = [
-          True if policy["Name"] == self.module.params[PARAM_NAME] else False
-          for policy in self.consul.acl.policy.list()
-      ]
-      return True in policy_exists
+        policy_exists = [
+            True if policy["Name"] == self.module.params[PARAM_NAME] else False
+            for policy in self.consul.acl.policy.list()
+        ]
+        return True in policy_exists
 
-    def _policy_create(self, parameter_list):
-      pass
+    def _policy_create(self):
+        if self._policy_exists():
+            self.result["changed"] = False
+            return
+        else:
+            rules = self._json_from_yaml(self.module.params[PARAM_RULES])
+            self.consul.acl.policy.create(
+                name=self.module.params[PARAM_NAME],
+                description=self.module.params[PARAM_NAME],
+                rules=rules,
+                datacenters=self.module.params[PARAM_DATACENTER],
+            )
+            self.result["rules"] = rules
+            self.result["changed"] = True
+
 
     def _policy_update(self, parameter_list):
-      pass
+        pass
 
     def _policy_delete(self, parameter_list):
-      pass
+        pass
 
     def _token_exists(self, parameter_list):
-      pass
+        pass
 
     def _token_create(self, parameter_list):
-      pass
+        payload = {
+            "SecretID": self.module.params[PARAM_TOKEN],
+            "Description": self.module.params[PARAM_NAME],
+            "Policies": [
+                {
+                    "Name": self.module.params[PARAM_NAME]
+                }
+            ]
+        }
+        self.consul.acl.tokens.create(payload)
 
     def _token_update(self, parameter_list):
-      pass
+        pass
 
     def _token_delete(self, parameter_list):
-      pass
+        pass
 
-    def _hcl_from_json(self, parameter_list):
-      pass
+    def _hcl_from_json(self, rules):
+        try:
+            rules_from_json = hcl.loads(rules)
+            return rules_from_json
+        except TypeError as identifier:
+              pass
+
+    def _json_from_yaml(self, rules):
+        try:
+            rules_from_yaml = json.dumps(rules)
+            return rules_from_yaml
+        except TypeError as identifier:
+            pass
 
     def run(self):
-      # policy
-      # token
-      self.module.exit_json(**self.result)
+        # policy
+        self._policy_create()
+        # token
+        self.module.exit_json(**self.result)
 
 
 if __name__ == "__main__":
