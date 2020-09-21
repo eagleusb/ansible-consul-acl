@@ -27,8 +27,6 @@ ansible-galaxy install eagleusb.consul_acl
 | consul_client_token | no       | []            | tokens(s) to add or update with associated rules |
 | consul_remove_token | no       | []            | token(s) to remove from consul                   |
 
-
-
 ## Playbook Example
 
 ```yml
@@ -45,28 +43,35 @@ ansible-galaxy install eagleusb.consul_acl
         consul_client_token:
           - client: "foobar-todelete"
             token: "123-456-789"
-            rules: []
+            rules: {}
           - client: "foobar-shuttle"
             token: "123-456-789"
             rules:
-              - event: "fiesta"
-                policy: write
-              - key: "foo/bar"
-                policy: read
-              - key: "foo/private"
-                policy: deny
-              - keyring: write
-              - node: "my-node"
-                policy: write
-              - operator: read
-              - query: ""
-                policy: write
-              - service: "consul"
-                policy: write
-              - session: "standup"
-                policy: write
+              event:
+                "fiesta":
+                    policy: write
+              key:
+                "foo/bar":
+                  policy: read
+                "foo/private":
+                  policy: deny
+              keyring: write
+              node:
+                "my-node":
+                  policy: write
+              operator: read
+              query:
+                "":
+                  policy: write
+              service:
+                "consul":
+                  policy: write
+              session:
+                "standup":
+                  policy: write
         consul_remove_token:
-          - "123-456-789"
+          - client: "foobar-todelete"
+            token: "123-456-789"
 ```
 
 ## License
