@@ -44,6 +44,9 @@ ansible-galaxy install eagleusb.consul_acl
           - client: "foobar-todelete-later"
             token: "123-456-789"
           - client: "foobar-with-random-token"
+          - client: "foobar-with-datacenters"
+            datacenters:
+              - "dc1"
           - client: "foobar-shuttle"
             token: "123-456-789"
             rules:

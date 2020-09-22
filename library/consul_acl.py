@@ -157,7 +157,7 @@ try:
 except ImportError:
     raise ImportError("You must install python-consul2, pyhcl and requests")
 
-PARAM_DATACENTER = "datacenter"
+PARAM_DATACENTER = "datacenters"
 PARAM_HOSTNAME = "host"
 PARAM_NAME = "name"
 PARAM_PORT = "port"
@@ -249,11 +249,12 @@ class Consul(object):
             rules = self._json_from_yaml(self.module.params[PARAM_RULES])
             description = "Policy associated to {}".format(
                 self.module.params[PARAM_NAME])
+            datacenters = self.module.params[PARAM_DATACENTER]
             self.consul.acl.policy.create(
                 name=self.module.params[PARAM_NAME],
                 description=description,
                 rules=rules,
-                datacenters=self.module.params[PARAM_DATACENTER],
+                datacenters=datacenters,
             )
             self.result["message"] = "Policy created successfully."
             self.result["changed"] = True
@@ -265,15 +266,17 @@ class Consul(object):
                 current_policy = self.consul.acl.policy.get(
                     policy_id=policy["ID"])
                 rules = self._json_from_yaml(self.module.params[PARAM_RULES])
-                if current_policy["Rules"] != rules:
+                datacenters = self.module.params[PARAM_DATACENTER]
+                # TODO: manage properly the case where datacenters need to be updated
+                if current_policy["Rules"] != rules or "Datacenters" not in current_policy.keys():
                     self.consul.acl.policy.update(
                         policy_id=policy["ID"],
                         name=policy["Name"],
                         description=policy["Description"],
                         rules=rules,
-                        datacenters=self.module.params[PARAM_DATACENTER],
+                        datacenters=datacenters,
                     )
-                    self.result["message"] = "Policy rules updated successfully."
+                    self.result["message"] = "Policy rules/datacenters updated successfully."
                     self.result["changed"] = True
                 break
 

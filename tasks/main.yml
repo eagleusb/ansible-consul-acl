@@ -15,6 +15,7 @@
     name: "{{ item.client }}"
     token: "{{ item.token | default(omit) }}"
     rules: "{{ item.rules | default(omit) }}"
+    datacenters: "{{ item.datacenters | default(omit) }}"
   loop: "{{ consul_client_token }}"
   when:
     - consul_client_token is sequence()

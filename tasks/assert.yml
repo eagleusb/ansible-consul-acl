@@ -6,6 +6,9 @@
     that:
       - consul_client_token is sequence()
       - consul_client_token | length() > 0
+      - '{% if (consul_client_token.datacenter is defined) %}
+        consul_client_token.datacenters is sequence()
+        {% endif %}'
   tags: always
 
 - name: "consul-acl | ensure consul_remove_token list is valid when defined"
