@@ -41,9 +41,9 @@ ansible-galaxy install eagleusb.consul_acl
           scheme: "http"
         consul_master_token: "123-456-789"
         consul_client_token:
-          - client: "foobar-todelete"
+          - client: "foobar-todelete-later"
             token: "123-456-789"
-            rules: {}
+          - client: "foobar-with-random-token"
           - client: "foobar-shuttle"
             token: "123-456-789"
             rules:
@@ -70,8 +70,7 @@ ansible-galaxy install eagleusb.consul_acl
                 "standup":
                   policy: write
         consul_remove_token:
-          - client: "foobar-todelete"
-            token: "123-456-789"
+          - client: "foobar-todelete-later"
 ```
 
 ## License

@@ -298,7 +298,6 @@ class Consul(object):
         payload = {
             "AccessorID": str(uuid.uuid5(
                 uuid.NAMESPACE_DNS, name=self.module.params[PARAM_NAME])),
-            "SecretID": self.module.params[PARAM_TOKEN],
             "Description": "Token for {}".format(self.module.params[PARAM_NAME]),
             "Policies": [
                 {
@@ -310,6 +309,10 @@ class Consul(object):
             # "ExpirationTime": "",
             # "ExpirationTTL": "",
         }
+        secret_id = self.module.params[PARAM_TOKEN]
+        if secret_id:
+          payload["SecretID"] = secret_id
+
         if self._token_exists(payload):
             self._token_update(payload)
         else:
@@ -345,6 +348,8 @@ class Consul(object):
 
     def _json_from_yaml(self, rules):
         try:
+            if not rules:
+              rules = {}
             rules_from_yaml = json.dumps(rules)
             return rules_from_yaml
         except TypeError as identifier:
