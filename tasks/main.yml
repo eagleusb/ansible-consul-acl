@@ -13,8 +13,8 @@
     port: "{{ consul_server.port | default(8500) }}"
     mgmt_token: "{{ consul_master_token | mandatory() }}"
     name: "{{ item.client }}"
-    token: "{{ item.token }}"
-    rules: "{{ item.rules }}"
+    token: "{{ item.token | default(omit) }}"
+    rules: "{{ item.rules | default(omit) }}"
   loop: "{{ consul_client_token }}"
   when:
     - consul_client_token is sequence()
@@ -27,7 +27,6 @@
     port: "{{ consul_server.port | default(8500) }}"
     mgmt_token: "{{ consul_master_token | mandatory() }}"
     name: "{{ item.client }}"
-    token: "{{ item.token }}"
     state: absent
   loop: "{{ consul_remove_token }}"
   when:
